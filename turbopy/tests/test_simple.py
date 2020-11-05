@@ -7,6 +7,9 @@ import turbopy
 data_path = os.path.join(turbopy.__path__[0], 'data')
 
 def test_nothing_useful():
+    """
+    Test testing
+    """
     npt.assert_equal(0.0, 0.0)
     npt.assert_almost_equal(np.pi, 4*np.arctan(1.0))
     
@@ -22,7 +25,3 @@ def test_simple():
                                          atmosphere=atmo,
                                          linelist=ll)
     
-def test_linelist():
-    out = turbopy.linelists.read_vald_long(os.path.join(data_path, "BertrandPlez.002060"))
-    print(out)
-    raise RuntimeError("To print: test_linelist")

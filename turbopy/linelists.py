@@ -41,7 +41,7 @@ def _get_levels(l2, l3):
     for split in [s2, s3]:
         if len(split)==0 or split[0] not in ["LS","JJ","JK","LK"]: return "X", "X"
         configuration = split[1]
-        this_levels = re.findall(r"[a-z]", configuration)
+        this_levels = re.findall(r"[spdfghik]", configuration)
         # Going to try last 2 levels of configuration
         try:
             levels.append(all_levels.index(this_levels[-1]))
@@ -59,13 +59,15 @@ def _get_levels(l2, l3):
         return "X","X"
     elif np.abs(lhi - llo) == 1:
         pass # keep these
+    elif llo2 >= 3 or lhi2 >= 3: # going to second 
+        llo, lhi = 2, 3
     else:
         ixrow, ixcol = 4*llo + llo2+1, 4*lhi + lhi2+1
         llo, lhi = _all_level_map[ixrow, ixcol]
     all_levels = ["s","p","d","f"]
     return all_levels[llo], all_levels[lhi]
 
-def read_vald_long(fname):
+def read_vald_long(fname, outfname=None):
     """
     This code is meant to mimic vald3line-BPz-freeformat.f
     but fix issues with molecules etc
@@ -115,9 +117,9 @@ def read_vald_long(fname):
         if Waals != 0:
             fdamp = Waals
         elif ion == 1 and inttspecies in fdampdict1:
-            fdamp = str(fdampdict1[inttspecies])
+            fdamp = fdampdict1[inttspecies]
         elif ion == 1 and inttspecies in fdampdict2:
-            fdamp = str(fdampdict2[inttspecies])
+            fdamp = fdampdict2[inttspecies]
         else:
             fdamp = 2.5
         
@@ -125,14 +127,17 @@ def read_vald_long(fname):
         if Rad > 3.0: raddmp = 10**Rad
         else: raddmp = 1.e5
         
+        critehi = 999999.
         if len(elems) == 1: # an atom
             levlo, levup = _get_levels(l2, l3)
+            if ion == 1: critehi = utils.get_ionp1(elems[0])
+            elif ion == 2: critehi = utils.get_ionp2(elems[0])
         else: # a molecule
             fdamp = 2.500 
             levlo, levup = "X", "X"
         
-        return tspecies, ion, wave, expot, loggf, fdamp, gu, raddmp, \
-            levlo, levup, ehi
+        return tspecies, ion, float(wave), float(expot), float(loggf), fdamp, gu, raddmp, \
+            levlo, levup, float(ehi), critehi
     
     alldata = []
     with open(fname) as fp:
@@ -143,11 +148,34 @@ def read_vald_long(fname):
             except FinishedReading:
                 break
             alldata.append(out)
-            #elems, ion, specstr, wave, loggf, dum, dum, dum, dum, levlo, levhi = out[0:11]
-            #print(specstr, levlo, levhi)
-        #raise
+    cols = ["tspecies","ion","wave","expot","loggf","fdamp","gu","raddmp",
+            "levlo","levup","ehi", "critehi"]
+    tab = Table(rows=alldata, names=cols)
     
-    return out
+    ## Cut lines
+    tab["sortspecies"] = tab["tspecies"].astype(float) + 0.0000001 * tab["ion"]
+    iibad = (tab["sortspecies"] < 3) | (tab["ion"] > 2) | (tab["ion"] < 1) | \
+        (tab["expot"] > 15.) | (tab["loggf"] < -10.) | (tab["loggf"] > 100.) | \
+        (tab["ehi"] > tab["critehi"])
+    tab = tab[~iibad]
+    
+    tab.sort(["sortspecies","wave"])
+    tab["raddmp"].format = ".2e"
+    tab["fdamp"].format = ".3f"
+    
+    if outfname is not None:
+        with open(outfname, "w") as fp:
+            def write(x):
+                fp.write(f"{x}\n")
+            for sortspecies in np.unique(tab["sortspecies"]):
+                t = tab[tab["sortspecies"]==sortspecies]
+                N = len(t)
+                write(f"'{t[0]['tspecies']}'      {t[0]['ion']}       {N}")
+                write(f"'Comment'")
+                for row in t:
+                    #fmt = "{wave:10.3f} {expot:6.3f} {loggf:6.3f} {fdamp:8.3f} {gu:6.1f} {raddmp:9.2e} '{levlo}' '{levup}'"
+                    write(f"{row['wave']:10.3f} {row['expot']:6.3f} {row['loggf']:6.3f} {row['fdamp']:8.3f} {row['gu']:6.1f} {row['raddmp']:9.2e} '{row['levlo']}' '{row['levup']}'")
+    return tab
 
 # I just manually did the selection rule matrix. 12x12
 # The rows are lower, going from 0-1 00 01 02 through 22 for llo1,llo2

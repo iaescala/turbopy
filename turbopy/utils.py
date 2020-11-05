@@ -64,13 +64,13 @@ def elem_to_Z(elem):
     return ix + 1
 def get_solar(Z_or_elem):
     if isinstance(Z_or_elem, str): Z_or_elem = elem_to_Z(Z_or_elem)
-    return _sunabund[Z-1]
+    return _sunabund[Z_or_elem-1]
 def get_ionp1(Z_or_elem):
     if isinstance(Z_or_elem, str): Z_or_elem = elem_to_Z(Z_or_elem)
-    return _ionp1[Z-1]
+    return _ionp1[Z_or_elem-1]
 def get_ionp2(Z_or_elem):
     if isinstance(Z_or_elem, str): Z_or_elem = elem_to_Z(Z_or_elem)
-    return _ionp2[Z-1]
+    return _ionp2[Z_or_elem-1]
 
 def identify_specstr(specstr):
     """ Figure out what is the species number, isotope, etc for """
