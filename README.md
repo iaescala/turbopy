@@ -1,1 +1,47 @@
 # turbopy
+
+Python interface to Turbospectrum.
+
+
+
+Authors
+-------
+ - Alex Ji (Carnegie Observatories)
+
+Installation
+------------
+This only works with python 3 (needs format strings)
+
+### Python Dependencies
+* numpy
+* astropy
+
+### Turbospectrum
+* Install Turbospectrum: https://github.com/bertrandplez/Turbospectrum2019
+* You will need to have `babsma_lu` and `bsyn_lu` in your `$PATH`
+* Define the environment variable `$TURBODATA=/path/to/Turbospectrum2019/DATA`
+
+Usage
+-----
+
+This is an example of how this should work once it's all going:
+```
+import turbopy
+
+wmin, wmax, dwl = 6700, 6720, 0.1
+ll = turbopy.TSLineList("vald-6700-6720.list")
+atmo = turbopy.MARCSModel.load("sun.mod")
+
+wave, norm, flux = turbopy.run_synth(wmin, wmax, dwl,
+                                     atmosphere=atmo, vt=1.0,
+                                     linelist=ll, outfname="sun-6700-6720.tar.gz")
+```
+
+Citation
+--------
+* Please cite Plez, B., 2012, Astrophysics Source Code Library, record ascl:1205.004
+  see: http://adsabs.harvard.edu/abs/2012ascl.soft05004P
+* This code has benefited greatly from Jo Bovy's `apogee` package.
+  You should follow that citation for now.
+  https://github.com/jobovy/apogee#citing-this-code
+* A software citation for this package will come once it is stable and releasable.
