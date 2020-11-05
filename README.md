@@ -43,11 +43,12 @@ Right now if you have a linelist and model atmosphere that you like, this will w
 
 I am now making utilities to deal with linelists, model atmospheres, and such.
 
-Citation
---------
+Citation and Acknowledgments
+----------------------------
 * Please cite Plez, B., 2012, Astrophysics Source Code Library, record ascl:1205.004
   see: http://adsabs.harvard.edu/abs/2012ascl.soft05004P
+* A software citation for this package will come once it is stable and releasable.
 * This code has benefited greatly from Jo Bovy's `apogee` package.
   You should follow that citation for now.
   https://github.com/jobovy/apogee#citing-this-code
-* A software citation for this package will come once it is stable and releasable.
+* The structure for this package was based on https://github.com/uwescience/shablona
