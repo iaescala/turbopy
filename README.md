@@ -33,9 +33,15 @@ ll = turbopy.TSLineList("vald-6700-6720.list")
 atmo = turbopy.MARCSModel.load("sun.mod")
 
 wave, norm, flux = turbopy.run_synth(wmin, wmax, dwl,
+                                     [12.0, 0.4], [6.0, 0.5], [8.0, 0.5],
                                      atmosphere=atmo, vt=1.0,
                                      linelist=ll, outfname="sun-6700-6720.tar.gz")
 ```
+
+Right now if you have a linelist and model atmosphere that you like, this will work
+(based on Jo Bovy's APOGEE code).
+
+I am now making utilities to deal with linelists, model atmospheres, and such.
 
 Citation
 --------
