@@ -38,3 +38,37 @@ class MARCSModel(object):
     def get_fname(self):
         return self.fname
     
+    @property
+    def Teff(self):
+        return self._Teff
+    @Teff.setter
+    def Teff(self, x):
+        self._Teff = x
+    
+    @property
+    def logg(self):
+        return self._logg
+    @logg.setter
+    def logg(self, x):
+        self._logg = x
+    
+    @property
+    def MH(self):
+        return self._MH
+    @MH.setter
+    def MH(self, x):
+        self._MH = x
+    
+    @property
+    def aFe(self):
+        return self._AM
+    @aFe.setter
+    def aFe(self, x):
+        self._AM = x    
+    @property
+    def AM(self):
+        return self._AM
+    @aFe.setter
+    def AM(self, x):
+        self._AM = x
+    
