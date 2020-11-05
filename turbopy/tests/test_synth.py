@@ -15,7 +15,7 @@ def test_synth_simple():
     twd = tempfile.mkdtemp(dir=os.getcwd()+"/tmp")
     print(twd)
     
-    wmin, wmax, dwl = 6700, 6720, 0.1
+    wmin, wmax, dwl = 6700, 6720, 0.01
     ll = turbopy.TSLineList(os.path.join(data_path, "vald-6700-6720.list"))
     atmo = turbopy.MARCSModel.load(os.path.join(data_path, "sun.mod"))
     atmo.Teff = 5777
@@ -26,6 +26,19 @@ def test_synth_simple():
                                          atmosphere=atmo, vt=1.0,
                                          linelist=ll, twd=twd)
     
+    wave2, norm2, flux2 = turbopy.run_synth(wmin, wmax, dwl,
+                                            [12.0, 0.4], [6.0, 1.0], [8.0, 1.0],
+                                            atmosphere=atmo, vt=1.0,
+                                            linelist=ll, twd=twd)
+    """
+    import matplotlib.pyplot as plt
+    fig = plt.figure()
+    plt.plot(wave, norm, 'k-', lw=3)
+    plt.plot(wave, norm2, 'r-', lw=1)
+    fig.savefig("test3.pdf")
+    plt.close(fig)
+    """
+    
 def test_synth_linelist():
     """
     Run a default synthesis
@@ -34,7 +47,7 @@ def test_synth_linelist():
     twd = tempfile.mkdtemp(dir=os.getcwd()+"/tmp")
     print(twd)
     
-    wmin, wmax, dwl = 6700, 6720, 0.1
+    wmin, wmax, dwl = 6700, 6720, 0.01
     ll1 = turbopy.TSLineList(os.path.join(data_path, "vald-6700-6720.list"))
     ll2 = turbopy.TSLineList(os.path.join(data_path, "converted_BertrandPlez.002060"))
     atmo = turbopy.MARCSModel.load(os.path.join(data_path, "sun.mod"))
@@ -49,14 +62,19 @@ def test_synth_linelist():
                                             atmosphere=atmo, vt=1.0,
                                             linelist=ll2, twd=twd)
     
-    #import matplotlib.pyplot as plt
-    #fig = plt.figure()
-    #plt.plot(wave1, norm1, 'k-', lw=3)
-    #plt.plot(wave2, norm2, 'r-', lw=1)
-    #fig.savefig("test.pdf")
+    """
+    import matplotlib.pyplot as plt
+    fig = plt.figure()
+    plt.plot(wave1, norm1, 'k-', lw=3)
+    plt.plot(wave2, norm2, 'r-', lw=1)
+    fig.savefig("test.pdf")
+    fig = plt.figure()
+    plt.plot(wave1, norm2-norm1, 'k-', lw=1)
+    fig.savefig("test2.pdf")
+    np.save("test.npy", np.vstack([norm1,norm2]))
+    plt.close('all')
+    """
     
-    #np.save("test.npy", np.vstack([norm1,norm2]))
-
     npt.assert_almost_equal(wave1, wave2)
     npt.assert_almost_equal(norm1, norm2)
     npt.assert_almost_equal(flux1, flux2)

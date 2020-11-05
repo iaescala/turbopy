@@ -269,7 +269,7 @@ def validate_abundances(abundances, MH):
     
     new_abundances = {}
     for Z, XFe in zip(Zs, XFes):
-        new_abundances[Z] = XFe + atmosphere.MH + utils.get_solar(Z)
+        new_abundances[Z] = XFe + MH + utils.get_solar(Z)
     
     return new_abundances
 
