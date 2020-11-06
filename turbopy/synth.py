@@ -67,7 +67,7 @@ def run_synth(wmin, wmax, dwl, *args,
         raise ValueError(f"Trying to synthesize {Nwl} > {_lpoint_max} wavelength points")
     
     ## working directory
-    if twd is not None:
+    if twd is None:
         twd = tempfile.mkdtemp(dir=os.getcwd()+"/tmp")
     
     ## Linelist
