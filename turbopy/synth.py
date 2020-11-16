@@ -251,7 +251,7 @@ def run_synth(wmin, wmax, dwl, *args,
 def validate_abundances(abundances, MH):
     """ Input is format [(Z1, XFe1), (Z2, XFe2), ...] """
     assert isinstance(abundances, list), abundances
-    if len(abundances) == 0: return {26: 0.0}
+    if len(abundances) == 0: return {26: MH + utils.get_solar(26)}
     Zs = []
     XFes = []
     for Z,XFe in abundances:
