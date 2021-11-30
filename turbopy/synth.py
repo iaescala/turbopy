@@ -12,7 +12,7 @@ from . import utils
 
 _lpoint_max = 100000 # hardcoded into turbospectrum, we might change this
 _ERASESTR= "                                                                             "
-_TURBO_DIR_ = '/Users/iescala/Turbospectrum2019/exec-gf-v19.1/'
+_TURBO_DIR_ = '/Users/iescala/Turbospectrum2019/exec-gfie-v19.1/'
 
 def run_synth(wmin, wmax, dwl, *args,
               linelist=None,
@@ -307,11 +307,10 @@ def _write_script(scriptfilename,
             scriptfile.write("'ABFIND        :' '.false.'\n")
         if not bsyn:
             scriptfile.write("'MODELINPUT:' '%s'\n" % modelfilename)
-        if bsyn:
-            if marcsfile:
-                scriptfile.write("'MARCS-FILE:' '.true.'\n")
-            else:
-                scriptfile.write("'MARCS-FILE:' '.false.'\n")
+        if marcsfile:
+            scriptfile.write("'MARCS-FILE:' '.true.'\n")
+        else:
+            scriptfile.write("'MARCS-FILE:' '.false.'\n")
         scriptfile.write("'MODELOPAC:' '%s'\n" % modelopacname)
         if bsyn:
             scriptfile.write("'RESULTFILE :' '%s'\n"
