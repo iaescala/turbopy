@@ -88,14 +88,13 @@ def run_synth(wmin, wmax, dwl, *args,
         Hlinelist = 'DATA/Hlinedata'
     linelistfilenames.append(Hlinelist)
 
-    ## Isotopes: TODO
-    #if isinstance(isotopes,str) and isotopes.lower() == 'solar':
-    #    isotopes= {}
-    #elif isinstance(isotopes,str) and isotopes.lower() == 'arcturus':
-    #    isotopes= {'6.012':'0.9375',
-    #               '6.013':'0.0625'}
-    #elif not isinstance(isotopes,dict):
-    #    raise ValueError("'isotopes=' input not understood, should be 'solar', 'arcturus', or a dictionary")
+    if isinstance(isotopes,str) and isotopes.lower() == 'solar':
+        isotopes= {}
+    elif isinstance(isotopes,str) and isotopes.lower() == 'arcturus':
+        isotopes= {'6.012':'0.9375',
+                   '6.013':'0.0625'}
+    elif not isinstance(isotopes,dict):
+        raise ValueError("'isotopes=' input not understood, should be 'solar', 'arcturus', or a dictionary")
 
     ## Stellar atmosphere
     if atmosphere is not None:
@@ -119,10 +118,6 @@ def run_synth(wmin, wmax, dwl, *args,
 
     ## Abundances
     abundances = validate_abundances(list(args), atmosphere.MH)
-
-    ## TODO
-    ## THIS PART IS DIRECTLY COPIED from Jo's code
-    ## Needs to be updated and tested etc
 
     if modelopac is None or \
             (isinstance(modelopac,str) and not os.path.exists(modelopac)):
