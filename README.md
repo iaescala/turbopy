@@ -6,7 +6,9 @@ Python interface to Turbospectrum.
 
 Authors
 -------
- - Alex Ji (Carnegie Observatories)
+ - Alex Ji (University of Chicago)
+
+With major contributions from Jean Somalwar and Ivanna Escala
 
 Installation
 ------------
