@@ -11,7 +11,9 @@ from .marcs import MARCSModel, interp_atmosphere
 from . import utils
 
 _lpoint_max = 100000 # hardcoded into turbospectrum, we might change this
-_ERASESTR= "                                                                                "
+_ERASESTR= "                                                                             "
+_TURBO_DIR_ = '/Users/iescala/Turbospectrum2019/exec-gfie-v19.1/'
+
 def run_synth(wmin, wmax, dwl, *args,
               linelist=None,
               atmosphere=None,
@@ -19,13 +21,14 @@ def run_synth(wmin, wmax, dwl, *args,
               aFe=None, CFe=None, NFe=None, rFe=None, sFe=None,
               modelopac=None,
               outfname=None, twd=None, verbose=False,
-              costheta=1.0,isotopes={}
+              costheta=1.0,isotopes={}, marcsfile=True,
+              spherical=False, Hlinelist=None,
 ):
     """
     Run a turbospectrum synthesis.
     Based heavily on https://github.com/jobovy/apogee/blob/master/apogee/modelspec/turbospec.py
     From Nov 2020
-    
+
     INPUT ARGUMENTS:
        wmin, wmax, dwl: which wavelength range and step to run
        lists with abundances: e.g. (6, 0.0), (8, 1.0), (20, 0.4)
@@ -33,19 +36,19 @@ def run_synth(wmin, wmax, dwl, *args,
           [Atomic number2,diff2]
           ...
           [Atomic numberM,diffM]
-    
+
     SYNTHEIS KEYWORDS:
-       isotopes= ('solar') use 'solar' or 'arcturus' isotope ratios; 
+       isotopes= ('solar') use 'solar' or 'arcturus' isotope ratios;
           can also be a dictionary with isotope ratios (e.g., isotopes= {'6.012':'0.9375','6.013':'0.0625'})
        costheta= (1.) cosine of the viewing angle
-    
+
     ATMOSPHERE KEYWORDS:
        atmosphere: either a string pointing to the MARCS model file, or a MARCS model object
-       
+
        Teff, logg, MH, vt: can specify all of these 4 parameters to call interp_atmosphere
        aFe, CFe, NFe, rFe, sFe: can add these to interp_atmosphere if desired
-       
-       modelopac= (None) 
+
+       modelopac= (None)
                   (a) if set to an existing filename: assume babsma_lu has already been run and use this continuous opacity in bsyn_lu
                   (b) if set to a non-existing filename: store the continuous opacity in this file
 
@@ -53,23 +56,23 @@ def run_synth(wmin, wmax, dwl, *args,
           air= (True) if True, perform the synthesis in air wavelengths (affects the default Hlinelist, nothing else; output is in air if air, vacuum otherwise); set to False at your own risk, as Turbospectrum expects the linelist in air wavelengths!)
           Hlinelist= (None) Hydrogen linelists to use; can be set to the path of a linelist file or to the name of an APOGEE linelist; if None, then we first search for the Hlinedata.vac in the APOGEE linelist directory (if air=False) or we use the internal Turbospectrum Hlinelist (if air=True)
        linelist= (None) molecular and atomic linelists to use; can be set to the path of a linelist file or to the name of an APOGEE linelist, or lists of such files; if a single filename is given, the code will first search for files with extensions '.atoms', '.molec' or that start with 'turboatoms.' and 'turbomolec.'
-    
-    
+
+
     OUTPUT:
        (wavelengths,cont-norm. spectrum, spectrum (nwave))
        if keyword outfname is set to a path:
           save the output of bsyn_lu (spectrum) to outfname
-    
+
     """
-    
+
     Nwl = np.ceil((wmax-wmin)/dwl)
     if Nwl > _lpoint_max:
         raise ValueError(f"Trying to synthesize {Nwl} > {_lpoint_max} wavelength points")
-    
+
     ## working directory
     if twd is None:
         twd = tempfile.mkdtemp(dir=os.getcwd()+"/tmp")
-    
+
     ## Linelist
     if linelist is None:
         linelist = get_default_linelist(wmin, wmax)
@@ -78,19 +81,21 @@ def run_synth(wmin, wmax, dwl, *args,
     linelistfilenames = [linelist.get_fname()]
     rmLinelists = False
     # Link the Turbospectrum DATA directory
-    os.symlink(os.getenv('TURBODATA'),os.path.join(twd,'DATA'))
-    
-    ## TODO: HLinelist
-    
-    ## Isotopes: TODO
-    #if isinstance(isotopes,str) and isotopes.lower() == 'solar':
-    #    isotopes= {}
-    #elif isinstance(isotopes,str) and isotopes.lower() == 'arcturus':
-    #    isotopes= {'6.012':'0.9375',
-    #               '6.013':'0.0625'}
-    #elif not isinstance(isotopes,dict):
-    #    raise ValueError("'isotopes=' input not understood, should be 'solar', 'arcturus', or a dictionary")
-    
+    if not os.path.exists(os.path.join(twd, 'DATA')):
+        os.symlink(os.getenv('TURBODATA'),os.path.join(twd,'DATA'))
+
+    if Hlinelist is None:
+        Hlinelist = 'DATA/Hlinedata'
+    linelistfilenames.append(Hlinelist)
+
+    if isinstance(isotopes,str) and isotopes.lower() == 'solar':
+        isotopes= {}
+    elif isinstance(isotopes,str) and isotopes.lower() == 'arcturus':
+        isotopes= {'6.012':'0.9375',
+                   '6.013':'0.0625'}
+    elif not isinstance(isotopes,dict):
+        raise ValueError("'isotopes=' input not understood, should be 'solar', 'arcturus', or a dictionary")
+
     ## Stellar atmosphere
     if atmosphere is not None:
         # The MARCS models need you to set vt separately
@@ -110,14 +115,10 @@ def run_synth(wmin, wmax, dwl, *args,
                                        aFe, CFe, NFe, rFe, sFe)
         atmosphere.writeto(os.path.join(twd, 'atm.mod'))
     modelfilename = atmosphere.get_fname()
-    
+
     ## Abundances
     abundances = validate_abundances(list(args), atmosphere.MH)
-    
-    ## TODO
-    ## THIS PART IS DIRECTLY COPIED from Jo's code
-    ## Needs to be updated and tested etc
-    
+
     if modelopac is None or \
             (isinstance(modelopac,str) and not os.path.exists(modelopac)):
         # Now write the script file for babsma_lu
@@ -127,12 +128,13 @@ def run_synth(wmin, wmax, dwl, *args,
                       wmin,wmax,dwl,
                       None,
                       modelfilename,
-                      1,
+                      marcsfile,
                       modelopacname,
                       atmosphere.MH,
                       atmosphere.AM,
                       abundances,
                       atmosphere.vt,
+                      spherical,
                       None,None,None,bsyn=False)
         # Run babsma
         sys.stdout.write('\r'+"Running Turbospectrum babsma_lu ...\r")
@@ -144,7 +146,7 @@ def run_synth(wmin, wmax, dwl, *args,
             stdout= open('/dev/null', 'w')
             stderr= subprocess.STDOUT
         try:
-            p= subprocess.Popen(['babsma_lu'],
+            p= subprocess.Popen([os.path.join(_TURBO_DIR_, 'babsma_lu')],
                                 cwd=twd,
                                 stdin=subprocess.PIPE,
                                 stdout=stdout,
@@ -178,12 +180,13 @@ def run_synth(wmin, wmax, dwl, *args,
                   wmin,wmax,dwl,
                   costheta,
                   modelfilename,
-                  1,
+                  marcsfile,
                   modelopacname,
                   atmosphere.MH,
                   atmosphere.AM,
                   abundances, #indiv_abu,
                   None,
+                  spherical,
                   outfilename,
                   isotopes,
                   linelistfilenames,
@@ -198,7 +201,7 @@ def run_synth(wmin, wmax, dwl, *args,
         stdout= open('/dev/null', 'w')
         stderr= subprocess.STDOUT
     try:
-        p= subprocess.Popen(['bsyn_lu'],
+        p= subprocess.Popen([os.path.join(_TURBO_DIR_, 'bsyn_lu')],
                             cwd=twd,
                             stdin=subprocess.PIPE,
                             stdout=stdout,
@@ -239,7 +242,7 @@ def run_synth(wmin, wmax, dwl, *args,
         #        os.remove(linelistfilename)
         sys.stdout.write('\r'+_ERASESTR+'\r')
         sys.stdout.flush()
-    
+
     # Now read the output
     turboOut= np.loadtxt(outfilename)
     # Clean up
@@ -258,7 +261,7 @@ def validate_abundances(abundances, MH):
         Z = int(Z)
         assert (Z >= 3) & (Z <= 92), Z
         Zs.append(Z)
-        
+
         XFe = np.round(float(XFe),3)
         assert (XFe >= -9) & (XFe <= 9), XFe
         XFes.append(XFe)
@@ -266,11 +269,11 @@ def validate_abundances(abundances, MH):
     if 6 not in Zs: abundances.append([6,0.])
     # Add N as well I guess
     if 7 not in Zs: abundances.append([7,0.])
-    
+
     new_abundances = {}
     for Z, XFe in zip(Zs, XFes):
         new_abundances[Z] = XFe + MH + utils.get_solar(Z)
-    
+
     return new_abundances
 
 def _write_script(scriptfilename,
@@ -283,6 +286,7 @@ def _write_script(scriptfilename,
                   alphafe,
                   indiv_abu, # dictionary with atomic number, abundance
                   vmicro,
+                  spherical,
                   resultfilename,
                   isotopes,
                   linelistfilenames,
@@ -296,12 +300,15 @@ def _write_script(scriptfilename,
             scriptfile.write("'INTENSITY/FLUX:' 'Flux'\n")
             scriptfile.write("'COS(THETA)    :' '%.3f'\n" % costheta)
             scriptfile.write("'ABFIND        :' '.false.'\n")
-        scriptfile.write("'MODELINPUT:' '%s'\n" % modelfilename)
-        if marcsfile is None:
+        if not bsyn:
+            scriptfile.write("'MODELINPUT:' '%s'\n" % modelfilename)
+        if marcsfile:
+            scriptfile.write("'MARCS-FILE:' '.true.'\n")
+        else:
             scriptfile.write("'MARCS-FILE:' '.false.'\n")
         scriptfile.write("'MODELOPAC:' '%s'\n" % modelopacname)
         if bsyn:
-            scriptfile.write("'RESULTFILE :' '%s'\n" 
+            scriptfile.write("'RESULTFILE :' '%s'\n"
                              % resultfilename)
         scriptfile.write("'METALLICITY:'    '%.3f'\n" % metals)
         scriptfile.write("'ALPHA/Fe   :'    '%.3f'\n" % alphafe)
@@ -325,7 +332,10 @@ def _write_script(scriptfilename,
             scriptfile.write("'NFILES   :' '%i'\n" % nlines)
             for linelistfilename in linelistfilenames:
                 scriptfile.write("%s\n" % linelistfilename)
-            scriptfile.write("'SPHERICAL:'  'F'\n")
+            if spherical:
+                scriptfile.write("'SPHERICAL:'  'T'\n")
+            else:
+                scriptfile.write("'SPHERICAL:'  'F'\n")
             scriptfile.write("30\n")
             scriptfile.write("300.00\n")
             scriptfile.write("15\n")
